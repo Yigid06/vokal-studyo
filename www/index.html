@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vokal Isınma Stüdyosu</title>
+<style>
+:root{--bg:#faf8f5;--card:#fff;--tx:#241f1a;--mu:#7a7068;--ac:#d9480f;--ok:#2b8a3e;--ln:#e6dfd6;--gr:#efe9e0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17140f;--card:#211d17;--tx:#f3ece2;--mu:#a39a8e;--ac:#ff8a4c;--ok:#69db7c;--ln:#383129;--gr:#2b261f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17140f;--card:#211d17;--tx:#f3ece2;--mu:#a39a8e;--ac:#ff8a4c;--ok:#69db7c;--ln:#383129;--gr:#2b261f;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 12px}h2{font-size:18px;margin:0 0 8px}
+nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px}
+nav button,.btn{border:1px solid var(--ln);background:var(--card);color:var(--tx);padding:9px 14px;border-radius:10px;font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on,.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:16px;margin-bottom:14px}
+.mu{color:var(--mu);font-size:14px}
+.tab{display:none}.tab.on{display:block}
+.meter{display:flex;gap:16px;align-items:stretch;flex-wrap:wrap}
+canvas{border-radius:10px;background:var(--gr);width:100%;max-width:420px;height:380px;touch-action:none}
+.read{flex:1;min-width:170px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+#note{font-size:72px;font-weight:700;line-height:1;color:var(--ac)}
+#hz{font-size:20px}
+.cents{height:10px;background:var(--gr);border-radius:6px;position:relative}
+.cents i{position:absolute;top:-3px;width:4px;height:16px;border-radius:2px;background:var(--ok);left:50%;transition:left .1s}
+.cents b{position:absolute;left:50%;top:0;width:1px;height:10px;background:var(--mu)}
+.bar{height:10px;background:var(--gr);border-radius:6px;overflow:hidden}
+.bar div{height:100%;background:var(--ac);width:0}
+.step{padding:10px 12px;border-radius:10px;border:1px solid var(--ln);margin:6px 0}
+.step.cur{border-color:var(--ac);background:var(--gr)}.step.done{opacity:.55}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select{font:inherit;padding:8px;border-radius:8px;border:1px solid var(--ln);background:var(--card);color:var(--tx)}
+details{border:1px solid var(--ln);border-radius:12px;padding:10px 14px;margin-bottom:10px;background:var(--card)}
+summary{cursor:pointer;font-weight:600}
+label.ck{display:flex;gap:8px;align-items:flex-start;margin:6px 0}
+#circ{width:120px;height:120px;border-radius:50%;background:var(--ac);opacity:.8;margin:14px auto;transition:transform 1s linear;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600}
+.big{font-size:40px;font-weight:700;color:var(--ac)}
+</style>
+</head>
+<body>
+<main>
+<h1>🎤 Vokal Isınma Stüdyosu</h1>
+<nav id="nav">
+<button data-t="t1" class="on">Ölçer</button><button data-t="t2">Isınma (3 dk)</button><button data-t="t3">Ders programı</button><button data-t="t4">Araçlar</button>
+</nav>
+
+<section class="tab on" id="t1">
+<div class="card">
+<div class="meter">
+<canvas id="cv" width="420" height="380"></canvas>
+<div class="read">
+<div id="note">–</div>
+<div id="hz" class="mu">0 Hz</div>
+<div class="cents"><b></b><i id="ci"></i></div>
+<div class="mu" id="ct">Mikrofonu başlat ve “aaa” de</div>
+<div class="mu">Aralığın: <b id="rg">–</b></div>
+<div class="row"><button class="btn pri" id="mic">Mikrofonu başlat</button><button class="btn" id="rst">Aralığı sıfırla</button></div>
+</div></div>
+<p class="mu">Dikey eksen notaları gösterir (C2–C6). Çizgi, son birkaç saniyedeki sesinin geçmişidir. Telefonda ön kulaklık kullanırsan referans sesi ölçüme karışmaz.</p>
+</div>
+</section>
+
+<section class="tab" id="t2">
+<div class="card">
+<h2>Günlük ısınma rutini</h2>
+<p class="mu">Toplam 3 dakika. Rahat bir tonda, zorlamadan yap. Boğazında gerginlik hissedersen dur.</p>
+<div class="row"><div class="big" id="tm">3:00</div><button class="btn pri" id="go">Başlat</button><button class="btn" id="skip">Sonraki adım</button></div>
+<div class="bar" style="margin:10px 0"><div id="pb"></div></div>
+<div id="steps"></div>
+</div>
+</section>
+
+<section class="tab" id="t3">
+<div class="card"><h2>6 derslik program</h2><p class="mu">Haftada 4–5 gün, her ders ~15 dakika. Bir dersi rahat yapana kadar sonrakine geçme. Tamamladıklarını işaretle.</p><div class="bar"><div id="lp"></div></div></div>
+<div id="lessons"></div>
+</section>
+
+<section class="tab" id="t4">
+<div class="card">
+<h2>Referans ses</h2>
+<div class="row">
+<select id="rn"></select><select id="ro"><option>2</option><option>3</option><option selected>4</option><option>5</option></select>
+<button class="btn pri" id="pl">Çal</button><button class="btn" id="st">Durdur</button>
+</div>
+<p class="mu">Notayı çal, sonra aynı notayı söylemeye çalış ve Ölçer sekmesinde kontrol et.</p>
+</div>
+<div class="card">
+<h2>Nefes ritmi (4 - 2 - 6)</h2>
+<div id="circ">Hazır</div>
+<div class="row" style="justify-content:center"><button class="btn pri" id="bt">Başlat</button></div>
+<p class="mu" style="text-align:center">Burnundan 4 sn al, 2 sn tut, 6 sn “ssss” ile ver. Diyaframdan nefes: omuzların değil karnın kalkmalı.</p>
+</div>
+<div class="card">
+<h2>Ses açma yöntemleri</h2>
+<details><summary>Dudak trili (lip trill)</summary><p>Dudakları gevşek kapat, hava ile titret ve rahat bir kaydırma yap. Boğazı rahatlatır, nefes desteğini dengeler.</p></details>
+<details><summary>Siren (glissando)</summary><p>“ngng” veya “uuu” ile alçaktan yükseğe, sonra geri kay. Kayıtlar arası geçişi yumuşatır, aralığı güvenle genişletir.</p></details>
+<details><summary>Mırıldanma (humming)</summary><p>Ağız kapalı “mmm”. Yüzde, burun ve yanak kemiklerinde titreşim hisset. Düşük efor, yüksek rezonans.</p></details>
+<details><summary>Pipetle ses</summary><p>Pipetin ucunu dudakla tutup bir şarkının ezgisini söyle. Ses telleri üzerindeki baskıyı azaltır.</p></details>
+<details><summary>Çene ve dil gevşetme</summary><p>Çene eklemini masaj yap, dili dışarı çıkarıp “aaa” de. Gerginlik varsa ilk bu.</p></details>
+<details><summary>Beş notalı gam</summary><p>Do-Re-Mi-Re-Do'yu “mi-e-a-o-u” ile söyle, her tekrarda yarım ses yukarı çık. Rahatsız olduğun yerde dur.</p></details>
+</div>
+</section>
+</main>
+
+<script>
+const NN=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const $=id=>document.getElementById(id);
+const mname=m=>NN[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const f2m=f=>69+12*Math.log2(f/440);
+const m2f=m=>440*Math.pow(2,(m-69)/12);
+const LO=36,HI=84;
+
+// Tabs
+$("nav").onclick=e=>{const t=e.target.dataset.t;if(!t)return;
+document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b===e.target));
+document.querySelectorAll(".tab").forEach(s=>s.classList.toggle("on",s.id===t));};
+
+// Pitch meter
+let ac,an,buf,run=false,hist=[],recent=[],minM=null,maxM=null;
+const cv=$("cv"),cx=cv.getContext("2d");
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function detect(b,sr){
+ let n=b.length,rms=0;for(let i=0;i<n;i++)rms+=b[i]*b[i];rms=Math.sqrt(rms/n);
+ if(rms<0.012)return -1;
+ const lo=Math.floor(sr/1100),hi=Math.min(Math.floor(sr/70),n>>1);
+ const r=new Float32Array(hi+2);let best=0;
+ for(let l=lo;l<=hi;l++){let s=0,e=0;for(let i=0;i<n-hi;i++){s+=b[i]*b[i+l];e+=b[i+l]*b[i+l]}
+  r[l]=s/Math.sqrt(e*rms*rms*(n-hi)+1e-9);if(r[l]>best)best=r[l];}
+ if(best<0.55)return -1;
+ for(let l=lo+1;l<hi;l++){if(r[l]>=0.9*best&&r[l]>=r[l-1]&&r[l]>=r[l+1]){
+  const a=r[l-1],c=r[l],d=r[l+1],p=(a-d)/(2*(a-2*c+d)||1);return sr/(l+p);}}
+ return -1;
+}
+async function startMic(){
+ try{
+  const s=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+  const src=ac.createMediaStreamSource(s);an=ac.createAnalyser();an.fftSize=4096;src.connect(an);
+  buf=new Float32Array(an.fftSize);run=true;$("mic").textContent="Dinliyor…";$("ct").textContent="Şimdi “aaa” de";loop();
+ }catch(e){$("ct").textContent="Mikrofona erişilemedi. Tarayıcı iznini kontrol et.";}
+}
+$("mic").onclick=startMic;
+$("rst").onclick=()=>{minM=maxM=null;$("rg").textContent="–"};
+function loop(){
+ if(!run)return;an.getFloatTimeDomainData(buf);
+ const f=detect(buf,ac.sampleRate);
+ if(f>0){recent.push(f);if(recent.length>5)recent.shift();
+  const fs=[...recent].sort((a,b)=>a-b)[recent.length>>1],m=f2m(fs),r=Math.round(m),c=Math.round((m-r)*100);
+  $("note").textContent=mname(r);$("hz").textContent=fs.toFixed(1)+" Hz";
+  $("ci").style.left=(50+c/2)+"%";$("ct").textContent=(c>0?"+":"")+c+" cent "+(Math.abs(c)<8?"✓ tam":c>0?"(biraz tiz)":"(biraz pes)");
+  hist.push(m);if(minM===null||r<minM)minM=r;if(maxM===null||r>maxM)maxM=r;
+  $("rg").textContent=mname(minM)+" – "+mname(maxM);
+ }else{hist.push(null);recent=[];$("note").textContent="–";}
+ if(hist.length>180)hist.shift();draw();requestAnimationFrame(loop);
+}
+function draw(){
+ const W=cv.width,H=cv.height,L=44;cx.clearRect(0,0,W,H);
+ const y=m=>H-8-((m-LO)/(HI-LO))*(H-16);
+ cx.font="11px system-ui";cx.textBaseline="middle";
+ for(let m=LO;m<=HI;m++){const nm=NN[m%12],isC=nm==="C",is=nm.length>1;
+  if(is)continue;
+  cx.strokeStyle=css("--ln");cx.globalAlpha=isC?1:.5;cx.beginPath();cx.moveTo(L,y(m));cx.lineTo(W,y(m));cx.stroke();cx.globalAlpha=1;
+  if(isC||nm==="G"||nm==="E"){cx.fillStyle=isC?css("--tx"):css("--mu");cx.fillText(mname(m),4,y(m));}}
+ cx.strokeStyle=css("--ac");cx.lineWidth=3;cx.lineJoin="round";cx.beginPath();
+ let pen=false;const step=(W-L-6)/180;
+ hist.forEach((m,i)=>{if(m===null||m<LO||m>HI){pen=false;return}
+  const x=L+i*step;if(!pen){cx.moveTo(x,y(m));pen=true}else cx.lineTo(x,y(m));});
+ cx.stroke();
+ const last=hist[hist.length-1];if(last!=null&&last>=LO&&last<=HI){cx.fillStyle=css("--ac");cx.beginPath();cx.arc(L+(hist.length-1)*step,y(last),6,0,7);cx.fill();}
+}
+draw();
+
+// Warm-up routine
+const R=[
+ {n:"Diyafram nefesi",d:30,t:"Burnundan 4 sn nefes al, karnın kalksın. 6 sn “ssss” ile yavaşça ver."},
+ {n:"Çene ve yüz gevşetme",d:25,t:"Yanaklarını ve çene eklemini hafifçe ovala. Ağzını geniş aç-kapa, dilini bir kez dışarı çıkar."},
+ {n:"Dudak trili",d:35,t:"Rahat bir notada başla, yavaşça yukarı-aşağı kaydır. Dudaklar gevşek, nefes sabit."},
+ {n:"Mırıldanma (mmm)",d:30,t:"Ağız kapalı, orta tonda “mmm”. Yüzünde titreşim hisset, sonra yarım ton yukarı."},
+ {n:"Siren",d:30,t:"“Uuu” ile en alçaktan en yükseğe, sonra geri kay. Zorlanma, kıs sesle."},
+ {n:"Beş notalı gam",d:30,t:"Do-Re-Mi-Re-Do’yu “mi-e-a-o-u” ile söyle, her turda yarım ses yukarı."}
+];
+const total=R.reduce((a,s)=>a+s.d,0);
+$("steps").innerHTML=R.map((s,i)=>`<div class="step" id="s${i}"><b>${i+1}. ${s.n}</b> <span class="mu">${s.d} sn</span><br><span class="mu">${s.t}</span></div>`).join("");
+let tick=null,el=0,idx=0,go=false;
+const fmt=s=>Math.floor(s/60)+":"+String(Math.max(0,Math.floor(s%60))).padStart(2,"0");
+function sync(){let a=0,cur=0;R.forEach((s,i)=>{if(el>=a+s.d)cur=i+1;a+=s.d});cur=Math.min(cur,R.length-1);
+ idx=cur;R.forEach((s,i)=>{const e=$("s"+i);e.className="step"+(i<cur?" done":i===cur&&go?" cur":"")});
+ $("tm").textContent=fmt(total-el);$("pb").style.width=(el/total*100)+"%";}
+function end(){clearInterval(tick);go=false;$("go").textContent="Tekrar";$("tm").textContent="Bitti 🎉";document.querySelectorAll(".step").forEach(e=>e.className="step done")}
+$("go").onclick=()=>{if(go){go=false;clearInterval(tick);$("go").textContent="Devam";return}
+ if($("go").textContent==="Tekrar")el=0;go=true;$("go").textContent="Duraklat";sync();
+ tick=setInterval(()=>{el+=.25;if(el>=total){el=total;end();return}sync()},250);};
+$("skip").onclick=()=>{let a=0;for(const s of R){if(el<a+s.d){el=a+s.d;break}a+=s.d}if(el>=total)end();else sync()};
+sync();
+
+// Lessons
+const LS=[
+ {t:"Ders 1: Nefes ve duruş",s:["Ayaklar omuz genişliğinde, omuzlar gevşek, çene hafif içeri.","4-2-6 nefes ritmini 5 tur yap.","10 sn boyunca “ssss” ile eşit hava ver, süreyi her gün 1 sn artır.","Ölçerde “aaa” de ve çizginin ne kadar düz kaldığını izle."]},
+ {t:"Ders 2: Rahat konuşma sesi",s:["Konuşurken kullandığın notayı Ölçer’de bul (genelde erkeklerde C3–G3, kadınlarda G3–D4).","O notada “mmm” mırıldan, 5 tekrar.","Aynı notada “ma-me-mi-mo-mu” hecelerini söyle.","Notayı yarım ses yukarı-aşağı kaydır."]},
+ {t:"Ders 3: Perde doğruluğu",s:["Araçlar’dan bir nota çal, aynı notayı tut. Hedef: ±10 cent içinde 3 sn.","3 farklı notada tekrarla.","Do-Mi-Sol arpejini yavaş söyle, her notayı Ölçer’le kontrol et.","Hatalarını (hep tiz mi hep pes mi) not et."]},
+ {t:"Ders 4: Aralığı genişletme",s:["Siren ile alt ve üst sınırını bul. Ölçer’in aralık göstergesini kullan.","Zorlanma noktanın bir yarım ses altında dur.","Her gün sınırı en fazla yarım ses yukarı taşı.","Geçiş bölgesinde (kırılma) “nay” hecesiyle yumuşat."]},
+ {t:"Ders 5: Rezonans ve tını",s:["Mırıldanmayı “mmm-aaa” geçişiyle yap: titreşim yüzde kalsın.","Esneme hissiyle “ooo” söyle, ses hacmini hisset.","Aynı notayı parlak (“ii”) ve karanlık (“oo”) çıkar.","Kayıt al ve dinle."]},
+ {t:"Ders 6: Şarkıya uygulama",s:["Seçtiğin şarkının en alçak ve en yüksek notasını bul. Aralığına uyuyor mu?","İlk 4 ölçüyü “lu” hecesiyle söyle.","Sözlerle söyle, nefes alma yerlerini işaretle.","Ölçer’le tutarlılığını kontrol et."]}
+];
+let done={};try{done=JSON.parse(localStorage.getItem("vk")||"{}")}catch(e){}
+function rl(){
+ $("lessons").innerHTML=LS.map((l,i)=>`<details ${i===0?"open":""}><summary>${l.t}</summary>${l.s.map((s,j)=>`<label class="ck"><input type="checkbox" data-k="${i}-${j}" ${done[i+"-"+j]?"checked":""}><span>${s}</span></label>`).join("")}</details>`).join("");
+ const n=Object.values(done).filter(Boolean).length,tot=LS.reduce((a,l)=>a+l.s.length,0);$("lp").style.width=(n/tot*100)+"%";}
+$("lessons").onchange=e=>{const k=e.target.dataset.k;if(!k)return;done[k]=e.target.checked;try{localStorage.setItem("vk",JSON.stringify(done))}catch(x){}
+ const o=[...document.querySelectorAll("#lessons details")].map(d=>d.open);rl();document.querySelectorAll("#lessons details").forEach((d,i)=>d.open=o[i]);};
+rl();
+
+// Reference tone
+$("rn").innerHTML=NN.map((n,i)=>`<option value="${i}">${n}</option>`).join("");$("rn").value=9;
+let osc=null,g=null;
+function stopT(){if(osc){try{g.gain.setTargetAtTime(0,ac.currentTime,.05);osc.stop(ac.currentTime+.3)}catch(e){}osc=null}}
+$("pl").onclick=()=>{ac=ac||new (window.AudioContext||window.webkitAudioContext)();stopT();
+ const m=12*(parseInt($("ro").value)+1)+parseInt($("rn").value);
+ osc=ac.createOscillator();g=ac.createGain();osc.type="triangle";osc.frequency.value=m2f(m);
+ g.gain.setValueAtTime(0,ac.currentTime);g.gain.linearRampToValueAtTime(.25,ac.currentTime+.05);
+ osc.connect(g).connect(ac.destination);osc.start();};
+$("st").onclick=stopT;
+
+// Breath pacer
+let bi=null;
+$("bt").onclick=()=>{const c=$("circ");
+ if(bi){clearTimeout(bi);bi=null;c.textContent="Hazır";c.style.transform="scale(1)";$("bt").textContent="Başlat";return}
+ $("bt").textContent="Durdur";
+ const ph=[["Al",4,1.5],["Tut",2,1.5],["Ver",6,.8]];let i=0;
+ (function nx(){const p=ph[i%3];c.textContent=p[0];c.style.transition=`transform ${p[1]}s linear`;c.style.transform=`scale(${p[2]})`;i++;bi=setTimeout(nx,p[1]*1000)})();};
+</script>
+</body>
+</html>
